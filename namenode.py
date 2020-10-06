@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 
-tree = {'.': 1}
+tree = {}
 
 def save_tree():
     with open('tree.pkl', 'wb') as f:
@@ -20,4 +20,9 @@ def load_tree():
     with open('tree.pkl', 'rb') as f:
         # print(pickle.load(f))
         tree =  pickle.load(f)
+load_tree()
+
+
+if __name__ == '__main__':
+   app.run(host=sys.argv[1], port=int(sys.argv[2]), debug = True)
 
