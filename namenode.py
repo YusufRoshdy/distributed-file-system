@@ -22,6 +22,18 @@ def load_tree():
         tree =  pickle.load(f)
 load_tree()
 
+@app.route('/ls',methods = ['GET'])
+def ls():
+    path = request.form['path']
+    if path[-1] != '/':
+        path = path + '/'
+    ret = []
+    if path not in tree.keys():
+        return path + ' is not a directory'
+    for t in tree:
+        if path in t and len(path) != len(t):
+            ret.append(t[len(path):])
+    return '\n'.join(ret)
 
 if __name__ == '__main__':
    app.run(host=sys.argv[1], port=int(sys.argv[2]), debug = True)
