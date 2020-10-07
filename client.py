@@ -81,6 +81,33 @@ def delete_directory(html):
             r=requests.delete(html, data=payload)
         else:
             pass
+def get_input(html, X):
+
+    if(X == 'initialze'):
+        initialze(html)
+    if(X== 'file create'):
+        file_create(html)
+    if (X == 'file read'):
+        print(file_read(html))
+    if(X=='file write'):
+        file_write(html)
+
+    if (X == 'file delete'):
+        file_delete(html)
+    if (X == 'file info'):
+        file_info(html)
+    if (X == 'file copy'):
+        file_copy(html)
+    if (X == 'file move'):
+        file_move(html)
+    if (X == 'open directory'):
+        open_directory(html)
+    if (X == 'read directory'):
+        read_directory(html)
+    if (X == 'make directory'):
+        make_directory(html)
+    if (X == 'delete directory'):
+        delete_directory(html)
                
 def main():
     print('Welcome Client!')
