@@ -48,7 +48,19 @@ def file_move(html):
     print('Enter the path seperated by "/" where you want to put the file:')
     path = input().lower()
     payload = {'key1': 'file_move', 'key2': [file,path]}
-    r=requests.patch(html, data=payload)           
+    r=requests.patch(html, data=payload)   
+ def open_directory(html):
+    print('Enter the name of the directory to open:')
+    file = input().lower()
+
+    payload = {'key1': 'open_directory', 'key2': file}
+    r = requests.post(html, data=payload)
+def read_directory(html):
+    print('Enter the name of the directory to read:')
+    dir= input().lower
+    payload = {'key1': 'read_directory', 'key2':dir}
+    r=requests.get(html, data=payload)
+    return r.content           
 def main():
     print('Welcome Client!')
     print('what do you want to do?')
