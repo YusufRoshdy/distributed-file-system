@@ -19,6 +19,8 @@ def load_tree():
 load_tree()
 
 def format_path(path, path_type='folder'):
+    if path == '.':
+        path = './'
     if path[:2] != './':
         path = './' + path
     if path[-1] != '/' and path_type == 'folder':
