@@ -69,11 +69,11 @@ def write():
     if 'file' not in request.files:
         return 'No file received'
     file = request.files['file']
-    print(file)
+
     filename = file.filename
     file.save(filename)
     # TODO: send the command to the servers
-    tree[path+filename] = 1
+    tree[path+filename] = [os.stat(filename).st_size]
     save_tree(tree)
 
     return 'sucsess'
