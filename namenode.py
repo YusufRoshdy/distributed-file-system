@@ -72,8 +72,24 @@ def write():
 
     filename = file.filename
     file.save(filename)
-    # TODO: send the command to the servers
+    # TODO: send the command to the servers then delete the file from the local
     tree[path+filename] = [os.stat(filename).st_size]
+    save_tree(tree)
+
+    return 'sucsess'
+
+
+@app.route('/delete',methods = ['DELETE'])
+def delete_file():
+    global tree
+    path = request.form['path']
+    path = format_path(path, 'file')
+
+    if path not in tree.keys():
+        return "File doesn't exist"
+
+    # TODO: send the command to the servers
+    tree.pop(path, None)
     save_tree(tree)
 
     return 'sucsess'

@@ -19,12 +19,19 @@ def load_tree():
 load_tree()
 
 def format_path(path, path_type='folder'):
+    # turn . to ./
     if path == '.':
         path = './'
+    # add ./ to the start of path if doesn't exist
     if path[:2] != './':
         path = './' + path
+    # add / to folder names
     if path[-1] != '/' and path_type == 'folder':
         path = path + '/'
+    # remove / from the end of file name 
+    if path_type == 'file':
+        while len(path) and path[-1]=='/':
+            path = path[:-1]
     return path
 
 
