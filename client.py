@@ -60,7 +60,28 @@ def read_directory(html):
     dir= input().lower
     payload = {'key1': 'read_directory', 'key2':dir}
     r=requests.get(html, data=payload)
-    return r.content           
+    return r.content
+def make_directory(html):
+    print('Enter the name of the directory to make:')
+    dir = input().lower
+    payload = {'key1': 'make_directory', 'key2': dir}
+    r = requests.post(html, data=payload)
+
+def delete_directory(html):
+    print('Enter the name of the directory to delete:')
+    dir = input().lower()
+    payload = {'key1': 'delete_directory', 'key2': dir}
+    r=requests.get(html, data=payload)
+
+    if(r.content=='available'):
+        print('There are other files in this directory, are you sure you want to delete them? (yes/no)')
+        x=input().lower()
+        if(x=='yes'):
+            payload = {'key1': 'delete_directory_yes', 'key2': dir}
+            r=requests.delete(html, data=payload)
+        else:
+            pass
+               
 def main():
     print('Welcome Client!')
     print('what do you want to do?')
