@@ -24,7 +24,18 @@ def file_write(html):
     file = input().lower()
     file1=open(file)
     payload = {'key1': 'file_write', 'key2': [file, file1]}
-    r1 = requests.put(html, data=payload)   
+    r1 = requests.put(html, data=payload)
+def file_delete(html):
+    print('Enter the name of the file you want to delete:')
+    file = input().lower()
+    payload = {'key1': 'file_delete', 'key2': file}
+    r1 = requests.delete(html, data=payload)
+def file_info(html):
+    print('Enter the name if the file you want to get the information about:')
+    file = input().lower()
+    payload = {'key1': 'file_info', 'key2': file}
+    r1 = requests.get(html, data=payload)
+    return r1.content       
 def main():
     print('Welcome Client!')
     print('what do you want to do?')
