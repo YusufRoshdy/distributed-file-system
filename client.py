@@ -35,7 +35,20 @@ def file_info(html):
     file = input().lower()
     payload = {'key1': 'file_info', 'key2': file}
     r1 = requests.get(html, data=payload)
-    return r1.content       
+    return r1.content
+def file_copy(html):
+    print('Enter the name if the file you want to create the copy of:')
+    file = input().lower()
+    payload = {'key1': 'file_copy', 'key2': file}
+    r1 = requests.post(html, data=payload)
+
+def file_move(html):
+    print('Enter the name of the file you want to move:')
+    file = input().lower()
+    print('Enter the path seperated by "/" where you want to put the file:')
+    path = input().lower()
+    payload = {'key1': 'file_move', 'key2': [file,path]}
+    r=requests.patch(html, data=payload)           
 def main():
     print('Welcome Client!')
     print('what do you want to do?')
