@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request
+from flask import Flask, redirect, url_for, request, send_file
 import sys
 import pickle
 import os
@@ -79,7 +79,7 @@ def write():
     return 'sucsess'
 
 
-@app.route('/delete',methods = ['DELETE'])
+@app.route('/delete_file',methods = ['DELETE'])
 def delete_file():
     global tree
     path = request.form['path']
@@ -88,6 +88,34 @@ def delete_file():
     if path not in tree.keys():
         return "File doesn't exist"
 
+    # TODO: send the command to the servers
+    tree.pop(path, None)
+    save_tree(tree)
+
+    return 'sucsess'
+
+@app.route('/delete_directory',methods = ['DELETE'])
+def delete_directory():
+    global tree
+    path = request.form['path']
+    force = ''
+    if 'force' in request.form:
+        force = request.form['force']
+    path = format_path(path, 'folder')
+
+    if path not in tree.keys():
+        return path + " is not a directory"
+    files_inside_dir = []
+    for t in tree:
+        if path in t and len(path) != len(t):
+            if force.lower() == 'force':
+                files_inside_dir.append(t)
+            else:
+                return "Directory is not empty"
+    for f in files_inside_dir:
+        # TODO: send the command to the servers
+        tree.pop(f, None)
+        save_tree(tree)
     # TODO: send the command to the servers
     tree.pop(path, None)
     save_tree(tree)
