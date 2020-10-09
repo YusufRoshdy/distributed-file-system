@@ -7,6 +7,15 @@ from utilities import *
 app = Flask(__name__)
 
 tree = load_tree()
+pool = []
+@app.route('/connect',methods = ['POST'])
+def connect():
+    ip = request.form['ip']
+    port = request.form['port']
+    if [ip, port] not in pool:
+        pool.append([ip, port])
+    # TODO: initialize the server and send all files and folders
+    return 'sucsess'
 
 @app.route('/initialize',methods = ['POST'])
 def initialize():
