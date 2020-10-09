@@ -1,8 +1,11 @@
-from flask import Flask, redirect, url_for, request, send_file
-import sys
-import pickle
 import os
-from utilities import *
+import pickle
+import sys
+
+import requests
+from flask import Flask, redirect, request, send_file, url_for
+
+from util import *
 
 app = Flask(__name__)
 
@@ -87,21 +90,34 @@ def touch():
 def put():
     global tree
     path = request.form['path']
-    path = format_path(path, 'folder')
+    path = format_path(path, 'file')
+    if not check_parent_exist(path, tree):
+        return "Parent directory don't exist"
+
+    print(type(request.form['file']))
+    print(requests.post('http://127.0.0.1:5041/files/'+path[2:], data=request.form['file']))
+
+    tree[path] = [1, len(request.form['file'])] # [size, # of servers] change 1 to be the number of servers
+    save_tree(tree)
+    return 'sucsess'
+
+@app.route('/get',methods = ['GET'])
+def get():
+    global tree
+    path = request.form['path']
+    path = format_path(path, 'file')
 
     if path not in tree.keys():
-        return "Directory doesn't exist"
-    if 'file' not in request.files:
-        return 'No file received'
-    file = request.files['file']
+        return path + " doesn't exist"
+    # TODO: request from the server
+    
+    r = requests.get('http://127.0.0.1:5041/files/'+path[2:])
+    # print(r)
+    # print(r.text)
+    print(r.content)
 
-    filename = file.filename
-    file.save(filename)
-    # TODO: send the command to the servers then delete the file from the local
-    tree[path+filename] = [0, 1] # [size, # of servers] change 1 to be the number of servers
-    save_tree(tree)
+    return r.content
 
-    return 'sucsess'
 
 @app.route('/rm',methods = ['DELETE'])
 def rm():
