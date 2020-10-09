@@ -38,6 +38,16 @@ def ls():
                 ret.append(t[len(path):])
     return '\n'.join(ret)
 
+@app.route('/info',methods = ['GET'])
+def info():
+    path = request.form['path']
+    path = format_path(path, 'folder')
+
+    if path not in tree.keys():
+        return path + ' is not a file or directory'
+
+    return '\n'.join([str(x) for x in tree[path]])
+
 @app.route('/mkdir',methods = ['PUT'])
 def mkdir():
     global tree
@@ -69,7 +79,7 @@ def touch():
         return "Parent directory doesn't exist"
     
     # TODO: send the command to the servers and edit tree[path] = [??]
-    tree[path] = 1
+    tree[path] = [0, 1] # [size, # of servers] change 1 to be the number of servers
     save_tree(tree)
     return 'sucsess'
 
@@ -88,7 +98,7 @@ def put():
     filename = file.filename
     file.save(filename)
     # TODO: send the command to the servers then delete the file from the local
-    tree[path+filename] = [os.stat(filename).st_size]
+    tree[path+filename] = [0, 1] # [size, # of servers] change 1 to be the number of servers
     save_tree(tree)
 
     return 'sucsess'
