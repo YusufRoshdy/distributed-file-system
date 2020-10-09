@@ -8,6 +8,13 @@ app = Flask(__name__)
 
 tree = load_tree()
 
+@app.route('/initialize',methods = ['POST'])
+def initialize():
+    tree = tree = {'./': 1}
+    # TODO: send the command to the servers
+    save_tree(tree)
+    return 'sucsess'
+
 @app.route('/ls',methods = ['GET'])
 def ls():
     path = request.form['path']
@@ -57,9 +64,8 @@ def touch():
     save_tree(tree)
     return 'sucsess'
 
-
-@app.route('/write',methods = ['PUT'])
-def write():
+@app.route('/put',methods = ['PUT'])
+def put():
     global tree
     path = request.form['path']
     path = format_path(path, 'folder')
@@ -78,9 +84,8 @@ def write():
 
     return 'sucsess'
 
-
-@app.route('/delete_file',methods = ['DELETE'])
-def delete_file():
+@app.route('/rm',methods = ['DELETE'])
+def rm():
     global tree
     path = request.form['path']
     path = format_path(path, 'file')
@@ -94,8 +99,8 @@ def delete_file():
 
     return 'sucsess'
 
-@app.route('/delete_directory',methods = ['DELETE'])
-def delete_directory():
+@app.route('/rmdir',methods = ['DELETE'])
+def rmdir():
     global tree
     path = request.form['path']
     force = ''
