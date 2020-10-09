@@ -2,7 +2,7 @@ import os
 
 from flask import Flask, request, send_from_directory
 from werkzeug.utils import secure_filename
-from helpers.exceptions import HTTPBadRequest
+from helpers.exceptions import HTTPBadRequest, HTTPNotFound
 
 UPLOAD_FOLDER = './files'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
@@ -29,9 +29,21 @@ def upload_file(filename):
 
 
 @app.route("/files/<path:path>",  methods=["GET"])
-def get_file(path):
-    """Download a file."""
+def send_file(path):
+    """send a file to namenode"""
     return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True)
+
+
+@app.route("/files/<path:path>",  methods=["DELETE"])
+def delete_file(path):
+    """delete a file"""
+    try:
+        os.remove(os.path.join(UPLOAD_FOLDER, path))
+    except:
+        HTTPNotFound(
+            message="You did something wrong try again or contact Yusuf"
+        )
+
 
 
 if __name__ == '__main__':

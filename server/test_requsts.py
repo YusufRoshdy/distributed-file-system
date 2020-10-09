@@ -1,5 +1,6 @@
 import requests
 
+
 def upload():
     with open('helpers/exceptions.py') as fp:
         content = fp.read()
@@ -7,6 +8,7 @@ def upload():
     requests.post(
         '{}/files/newdata.txt'.format("http://127.0.0.1:5041"), data=content
     )
+
 
 def download():
     response = requests.get(
@@ -16,4 +18,10 @@ def download():
         fp.write(response.content)
 
 
-download()
+def delete():
+    requests.delete(
+        '{}/files/newdata.txt'.format("http://127.0.0.1:5041")
+    )
+
+
+delete()

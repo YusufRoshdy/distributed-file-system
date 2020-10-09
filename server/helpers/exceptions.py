@@ -24,3 +24,8 @@ class HTTPException(Exception):
 class HTTPBadRequest(HTTPException):
     code = 400
     title = 'Bad Request'
+
+
+class HTTPNotFound(HTTPException):
+    code = 404
+    title = 'Not Found'
