@@ -6,7 +6,7 @@ def upload():
         content = fp.read()
 
     requests.post(
-        '{}/files/newdata.txt'.format("http://127.0.0.1:5041"), data=content
+        '{}/files/newdata.txt'.format("http://127.0.0.1:5041"), data=""
     )
 
 
@@ -24,4 +24,15 @@ def delete():
     )
 
 
-delete()
+def mkdir():
+    requests.put(
+        '{}/mkdir/hi/'.format("http://127.0.0.1:5041")
+    )
+
+def delete_dir():
+    requests.delete(
+        '{}/dir/hi'.format("http://127.0.0.1:5041")
+    )
+
+
+upload()
