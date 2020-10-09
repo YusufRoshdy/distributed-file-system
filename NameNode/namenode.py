@@ -5,12 +5,13 @@ import sys
 import requests
 from flask import Flask, redirect, request, send_file, url_for
 
-from util import *
+from .util import *
 
 app = Flask(__name__)
 
 tree = load_tree()
 pool = []
+
 @app.route('/connect',methods = ['POST'])
 def connect():
     ip = request.form['ip']
@@ -95,6 +96,7 @@ def put():
         return "Parent directory don't exist"
 
     print(type(request.form['file']))
+    # TODO: send to all servers
     print(requests.post('http://127.0.0.1:5041/files/'+path[2:], data=request.form['file']))
 
     tree[path] = [1, len(request.form['file'])] # [size, # of servers] change 1 to be the number of servers
@@ -109,15 +111,13 @@ def get():
 
     if path not in tree.keys():
         return path + " doesn't exist"
-    # TODO: request from the server
-    
+    # TODO: request from a server that has the file
     r = requests.get('http://127.0.0.1:5041/files/'+path[2:])
     # print(r)
     # print(r.text)
     print(r.content)
 
     return r.content
-
 
 @app.route('/rm',methods = ['DELETE'])
 def rm():
@@ -162,6 +162,49 @@ def rmdir():
 
     return 'sucsess'
 
+
+@app.route('/cp',methods = ['POST'])
+def cp():
+    global tree
+    src = request.form['src']
+    dist = request.form['dist']
+    src = format_path(src, path_type='file')
+    dist = format_path(dist, path_type='file')
+    
+    if src not in tree.keys():
+        return src + " doesn't exist"
+
+    if not check_parent_exist(dist):
+        return "distnation file parent directory doesn't exist"
+
+    # TODO: send the command to the servers
+    # send 'cp src dist' to servers
+    tree[dist] = tree[src]
+    save_tree(tree)
+
+    return 'sucsess'
+
+@app.route('/mv',methods = ['PUT'])
+def mv():
+    global tree
+    src = request.form['src']
+    dist = request.form['dist']
+    src = format_path(src, path_type='file')
+    dist = format_path(dist, path_type='file')
+    
+    if src not in tree.keys():
+        return src + " doesn't exist"
+
+    if not check_parent_exist(dist):
+        return "distnation file parent directory doesn't exist"
+
+    # TODO: send the command to the servers
+    # send 'mv src dist' to servers
+    tree[dist] = tree[src]
+    tree.pop(src, None)
+    save_tree(tree)
+
+    return 'sucsess'
 
 if __name__ == '__main__':
    app.run(host=sys.argv[1], port=int(sys.argv[2]), debug = True)
