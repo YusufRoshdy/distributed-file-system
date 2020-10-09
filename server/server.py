@@ -1,8 +1,8 @@
 import os
 
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from werkzeug.utils import secure_filename
-from .helpers.exceptions import HTTPBadRequest
+from helpers.exceptions import HTTPBadRequest
 
 UPLOAD_FOLDER = './files'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
@@ -27,6 +27,11 @@ def upload_file(filename):
     return HTTPBadRequest(
         message='no file send or file format is not supported')
 
+
+@app.route("/files/<path:path>",  methods=["GET"])
+def get_file(path):
+    """Download a file."""
+    return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True)
 
 
 if __name__ == '__main__':
