@@ -1,7 +1,6 @@
 import os
 
 from flask import Flask, request, send_from_directory
-from werkzeug.utils import secure_filename
 from helpers.exceptions import HTTPBadRequest, HTTPNotFound
 
 UPLOAD_FOLDER = './files'
@@ -16,14 +15,20 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 
-@app.route("/files/<filename>", methods=["POST"])
-def upload_file(filename):
+# same for touch just send empty data
+@app.route("/files/<path:path>", methods=["POST"])
+def upload_file(path):
+    filename = os.path.basename(path)
     if filename and allowed_file(filename):
-        filename = secure_filename(filename)
-        with open(os.path.join(UPLOAD_FOLDER, filename), "wb") as fp:
-            fp.write(request.data)
-        return "", 201
-
+        try:
+            with open(os.path.join(UPLOAD_FOLDER, path), "wb") as fp:
+                fp.write(request.data)
+            return "", 201
+        except Exception as err:
+            raise HTTPNotFound(
+                message="You did something wrong try again or contact Yusuf"
+                        "the problem: {}".format(err)
+            )
     return HTTPBadRequest(
         message='no file send or file format is not supported')
 
@@ -44,7 +49,29 @@ def delete_file(path):
             message="You did something wrong try again or contact Yusuf"
         )
 
+# path from root
+# if you want to create hi dir put rootfolder/.../hi
+@app.route("/mkdir/<path:path>",  methods=["PUT"])
+def mkdir(path):
+    try:
+        os.mkdir(os.path.join(UPLOAD_FOLDER, path))
+    except:
+        HTTPNotFound(
+            message="You did something wrong try again or contact Yusuf"
+                    "The problem may acquired"
+                    " because {} is wrong path".format(path)
+        )
 
+
+@app.route("/dir/<path:path>",  methods=["DELETE"])
+def delete_dir(path):
+    """delete a file"""
+    try:
+        os.rmdir(os.path.join(UPLOAD_FOLDER, path))
+    except:
+        HTTPNotFound(
+            message="You did something wrong try again or contact Yusuf"
+        )
 
 if __name__ == '__main__':
     app.run(host="127.0.0.1", port=5041, debug=True)
