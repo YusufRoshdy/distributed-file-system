@@ -1,6 +1,7 @@
 import sys
 import pickle
 import os
+import requests
 
 def save_tree(tree):
     with open('tree.pkl', 'wb') as f:
@@ -16,7 +17,34 @@ def load_tree():
         # print(pickle.load(f))
         tree =  pickle.load(f)
     return tree
-load_tree()
+
+def save_pool(pool):
+    with open('pool.pkl', 'wb') as f:
+        pickle.dump(pool, f, pickle.HIGHEST_PROTOCOL)
+
+def load_pool():
+    pool = []
+    if not os.path.isfile('pool.pkl'):
+        print('Initializeing pool')
+        with open('pool.pkl', 'wb') as f:
+            pickle.dump(pool, f, pickle.HIGHEST_PROTOCOL)
+    with open('pool.pkl', 'rb') as f:
+        # print(pickle.load(f))
+        pool =  pickle.load(f)
+    return pool
+
+def update_pool(pool):
+    down = []
+    for server in pool:
+        try:
+            print('pinging',  f'http://{server["ip"]}:{server["port"]}')
+            r = requests.get(f'http://{server["ip"]}:{server["port"]}/check_up/')
+        except Exception as e:
+            down.append(server)
+    for server in down:
+        pool.remove(server)
+    save_pool(pool)
+    return pool
 
 def format_path(path, path_type='folder'):
     # turn . to ./

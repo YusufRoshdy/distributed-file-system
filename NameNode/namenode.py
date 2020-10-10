@@ -12,7 +12,7 @@ NO_CONTENT = ('', 204)
 app = Flask(__name__)
 
 tree = load_tree()
-pool = []
+pool = load_pool()
 
 def get_all_files(server):
     pass
@@ -20,24 +20,34 @@ def get_all_files(server):
 def send_command(command):
     print('sending command:', command, flush=True)
     print('pool size', len(pool))
+    pool = update_pool()
     for server in pool:
         r = requests.post(f'http://{server["ip"]}:{server["port"]}/command/', data=command)
     return len(pool)
 
 @app.route('/connect', methods=['POST'])
 def connect():
+    global pool
     ip = request.form['ip']
     port = request.form['port']
 
     print('\n', ip,':', port, 'requested to join\n')
-
     if {'ip': ip, 'port': port} not in pool:
         pool.append({'ip': ip, 'port': port})
         print(ip,':', port, 'has joind the cluster')
+        save_pool(pool)
     # TODO: initialize the server and send all files and folders
     if len(pool) > 0:
         files = get_all_files(pool[0])
     return NO_CONTENT # Response(files={})
+
+@app.route('/get_pool', methods=['GET'])
+def get_pool():
+    global pool
+    pool = update_pool(pool)
+    if len(pool) == 0:
+        return 'Pool is empty'
+    return '\n'.join([str(x) for x in pool])
 
 @app.route('/initialize',methods = ['POST'])
 def initialize():
@@ -123,6 +133,7 @@ def put():
 
     print(type(request.form['file']))
     # TODO: send to all servers
+    pool = update_pool(pool)
     if len(pool) < 1:
         return 'The cluster in unavailable'
     for server in pool:
@@ -142,6 +153,7 @@ def get():
     if path not in tree.keys():
         return path + " doesn't exist"
     # TODO: request from a server that has the file
+    pool = update_pool(pool)
     if len(pool) < 1:
         return 'The cluster in unavailable'
     r = requests.get(f"http://{pool[0]['ip']}:{pool[0]['port']}/files/"+path[2:])

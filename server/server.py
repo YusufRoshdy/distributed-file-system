@@ -39,6 +39,11 @@ def send_file(path):
     """send a file to namenode"""
     return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True)
 
+@app.route("/check_up/",  methods=["GET"])
+def check_up():
+    """check the server is up"""
+    return ('up', 200)
+
 
 @app.route("/command/",  methods=["POST"])
 def command():
