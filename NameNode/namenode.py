@@ -1,6 +1,7 @@
 import os
 import pickle
 import sys
+import io
 
 import requests
 from flask import Flask, redirect, request, send_file, url_for, Response
@@ -13,14 +14,16 @@ app = Flask(__name__)
 
 tree = load_tree()
 pool = load_pool()
+pool = update_pool(pool)
 
 def get_all_files(server):
-    pass
+    r = requests.get(f'http://{server["ip"]}:{server["port"]}/send_zip/')
+    return r.content # Response(files={'file': io.BytesIO(r.content)})
 
 def send_command(command):
     print('sending command:', command, flush=True)
     print('pool size', len(pool))
-    pool = update_pool()
+    pool = update_pool(pool)
     for server in pool:
         r = requests.post(f'http://{server["ip"]}:{server["port"]}/command/', data=command)
     return len(pool)
@@ -37,9 +40,10 @@ def connect():
         print(ip,':', port, 'has joind the cluster')
         save_pool(pool)
     # TODO: initialize the server and send all files and folders
-    if len(pool) > 0:
-        files = get_all_files(pool[0])
-    return NO_CONTENT # Response(files={})
+    res = '' # Response()
+    if len(pool) > 1:
+        res = get_all_files(pool[0])
+    return res # Response(files={})
 
 @app.route('/get_pool', methods=['GET'])
 def get_pool():

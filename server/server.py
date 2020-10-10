@@ -2,18 +2,48 @@ import os
 import requests
 from flask import Flask, request, send_from_directory
 from helpers.exceptions import HTTPBadRequest, HTTPNotFound
+import io
 import sys
+from os.path import basename
+from zipfile import ZipFile
 
 UPLOAD_FOLDER = './'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-requests.post(f'http://{sys.argv[3]}/connect', data={'ip': sys.argv[1], 'port': str(sys.argv[2])})
+
 
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+    return True
+    # return '.' in filename and \
+    #        filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+@app.route("/send_zip/", methods=["GET"])
+def send_zip():
+    with ZipFile('files.zip', 'w') as zipObj:
+        # Iterate over all the files in directory
+        for folderName, subfolders, filenames in os.walk(UPLOAD_FOLDER):
+            if 'helpers' not in folderName and '.git' not in folderName:
+                zipObj.write(folderName)
+                for filename in filenames:
+                    if filename != 'files.zip':
+                        zipObj.write(os.path.join(folderName, filename))
+    # os.remove()
+    return send_from_directory(UPLOAD_FOLDER, 'files.zip', as_attachment=True)
+
+def connect():
+    r = requests.post(f'http://{sys.argv[3]}/connect', data={'ip': sys.argv[1], 'port': str(sys.argv[2])})
+    print(r.content[:100])
+    if r.content == b'':
+        return
+    file = io.BytesIO(r.content)
+    with open('files.zip','wb') as out: ## Open temporary file as bytes
+        out.write(file.read())
+    with ZipFile('files.zip', 'r') as zipObj:
+        # Extract all the contents of zip file in current directory
+        zipObj.extractall()
+connect()
+
 
 
 # same for touch just send empty data
