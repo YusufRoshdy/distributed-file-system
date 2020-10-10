@@ -3,23 +3,41 @@ import pickle
 import sys
 
 import requests
-from flask import Flask, redirect, request, send_file, url_for
+from flask import Flask, redirect, request, send_file, url_for, Response
 
-from .util import *
+from util import *
+
+NO_CONTENT = ('', 204)
 
 app = Flask(__name__)
 
 tree = load_tree()
 pool = []
 
-@app.route('/connect',methods = ['POST'])
+def get_all_files(server):
+    pass
+
+def send_command(command):
+    print('sending command:', command, flush=True)
+    print('pool size', len(pool))
+    for server in pool:
+        r = requests.post(f'http://{server["ip"]}:{server["port"]}/command/', data=command)
+    return len(pool)
+
+@app.route('/connect', methods=['POST'])
 def connect():
     ip = request.form['ip']
     port = request.form['port']
-    if [ip, port] not in pool:
-        pool.append([ip, port])
+
+    print('\n', ip,':', port, 'requested to join\n')
+
+    if {'ip': ip, 'port': port} not in pool:
+        pool.append({'ip': ip, 'port': port})
+        print(ip,':', port, 'has joind the cluster')
     # TODO: initialize the server and send all files and folders
-    return 'sucsess'
+    if len(pool) > 0:
+        files = get_all_files(pool[0])
+    return NO_CONTENT # Response(files={})
 
 @app.route('/initialize',methods = ['POST'])
 def initialize():
@@ -45,12 +63,14 @@ def ls():
 @app.route('/info',methods = ['GET'])
 def info():
     path = request.form['path']
-    path = format_path(path, 'folder')
-
-    if path not in tree.keys():
+    folder = format_path(path, 'folder')
+    file = format_path(path, 'file')
+    if file in tree.keys():
+        return '\n'.join([str(x) for x in tree[file]])
+    elif folder in tree.keys():
+        return str(tree[folder])
+    else:
         return path + ' is not a file or directory'
-
-    return '\n'.join([str(x) for x in tree[path]])
 
 @app.route('/mkdir',methods = ['PUT'])
 def mkdir():
@@ -65,10 +85,12 @@ def mkdir():
     if not check_parent_exist(path, tree):
         return "Parent directory doesn't exist"
 
-    tree[path] = 1
+    replicas = send_command('mkdir '+ path[2:-1])
+    if replicas < 1:
+        return 'The cluster in unavailable'
+    tree[path] = replicas
     save_tree(tree)
-    # TODO: send the command to the servers
-    return 'sucsess'
+    return 'success'
 
 @app.route('/touch',methods = ['PUT'])
 def touch():
@@ -83,8 +105,12 @@ def touch():
         return "Parent directory doesn't exist"
     
     # TODO: send the command to the servers and edit tree[path] = [??]
-    tree[path] = [0, 1] # [size, # of servers] change 1 to be the number of servers
+    replicas = send_command('touch '+ path[2:])
+    if replicas < 1:
+        return 'The cluster in unavailable'
+    tree[path] = [0, replicas] # [size, # of servers] change 1 to be the number of servers
     save_tree(tree)
+    print('hi')
     return 'sucsess'
 
 @app.route('/put',methods = ['PUT'])
@@ -97,11 +123,15 @@ def put():
 
     print(type(request.form['file']))
     # TODO: send to all servers
-    print(requests.post('http://127.0.0.1:5041/files/'+path[2:], data=request.form['file']))
+    if len(pool) < 1:
+        return 'The cluster in unavailable'
+    for server in pool:
+        requests.post(f'http://{server["ip"]}:{server["port"]}/files/{path[2:]}', 
+                        data=request.form['file'])
 
     tree[path] = [1, len(request.form['file'])] # [size, # of servers] change 1 to be the number of servers
     save_tree(tree)
-    return 'sucsess'
+    return NO_CONTENT
 
 @app.route('/get',methods = ['GET'])
 def get():
@@ -112,10 +142,12 @@ def get():
     if path not in tree.keys():
         return path + " doesn't exist"
     # TODO: request from a server that has the file
-    r = requests.get('http://127.0.0.1:5041/files/'+path[2:])
+    if len(pool) < 1:
+        return 'The cluster in unavailable'
+    r = requests.get(f"http://{pool[0]['ip']}:{pool[0]['port']}/files/"+path[2:])
     # print(r)
     # print(r.text)
-    print(r.content)
+    # print(r.content)
 
     return r.content
 
@@ -126,13 +158,16 @@ def rm():
     path = format_path(path, 'file')
 
     if path not in tree.keys():
-        return "File doesn't exist"
+        return path + " doesn't exist"
 
     # TODO: send the command to the servers
+    replicas = send_command('rm '+ path[2:])
+    if replicas < 1:
+        return 'The cluster in unavailable'
     tree.pop(path, None)
     save_tree(tree)
 
-    return 'sucsess'
+    return 'success'
 
 @app.route('/rmdir',methods = ['DELETE'])
 def rmdir():
@@ -152,55 +187,65 @@ def rmdir():
                 files_inside_dir.append(t)
             else:
                 return "Directory is not empty"
+    replicas = 0
+    if force.lower() == 'force':
+        replicas = send_command('rm -r ' + path[2:-1])
+    else:
+        replicas = send_command('rmdir ' + path[2:-1])
+    
+    if replicas < 1:
+        return 'The cluster in unavailable'
+
     for f in files_inside_dir:
-        # TODO: send the command to the servers
         tree.pop(f, None)
         save_tree(tree)
-    # TODO: send the command to the servers
     tree.pop(path, None)
     save_tree(tree)
 
-    return 'sucsess'
-
+    return NO_CONTENT
 
 @app.route('/cp',methods = ['POST'])
 def cp():
     global tree
     src = request.form['src']
-    dist = request.form['dist']
+    dest = request.form['dest']
     src = format_path(src, path_type='file')
-    dist = format_path(dist, path_type='file')
+    dest = format_path(dest, path_type='file')
     
     if src not in tree.keys():
         return src + " doesn't exist"
 
-    if not check_parent_exist(dist):
-        return "distnation file parent directory doesn't exist"
+    if not check_parent_exist(dest):
+        return "destnation file parent directory doesn't exist"
 
-    # TODO: send the command to the servers
-    # send 'cp src dist' to servers
-    tree[dist] = tree[src]
+    
+    replicas = send_command('cp ' + src[2:] + ' ' + dest[2:])
+    if replicas < 1:
+        return 'The cluster in unavailable'
+    tree[dest] = tree[src]
     save_tree(tree)
 
-    return 'sucsess'
+    return 'success'
 
 @app.route('/mv',methods = ['PUT'])
 def mv():
     global tree
     src = request.form['src']
-    dist = request.form['dist']
+    dest = request.form['dest']
     src = format_path(src, path_type='file')
-    dist = format_path(dist, path_type='file')
+    dest = format_path(dest, path_type='file')
     
     if src not in tree.keys():
         return src + " doesn't exist"
 
-    if not check_parent_exist(dist):
-        return "distnation file parent directory doesn't exist"
+    if not check_parent_exist(dest):
+        return "destnation file parent directory doesn't exist"
 
-    # TODO: send the command to the servers
-    # send 'mv src dist' to servers
-    tree[dist] = tree[src]
+
+    replicas = send_command('mv ' + src[2:] + ' ' + dest[2:])
+    if replicas < 1:
+        return 'The cluster in unavailable'  
+    tree[dest] = tree[src]
     tree.pop(src, None)
     save_tree(tree)
 

