@@ -2,13 +2,14 @@ import os
 import requests
 from flask import Flask, request, send_from_directory
 from helpers.exceptions import HTTPBadRequest, HTTPNotFound
+import sys
 
 UPLOAD_FOLDER = './'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-requests.post('http://localhost:5000/connect', data={'ip': '127.0.0.1', 'port': '5041'})
+requests.post(f'http://{sys.argv[3]}/connect', data={'ip': sys.argv[1], 'port': str(sys.argv[2])})
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -89,4 +90,4 @@ def delete_dir(path):
         )
 
 if __name__ == '__main__':
-    app.run(host="127.0.0.1", port=5041, debug=True)
+    app.run(host=sys.argv[1], port=int(sys.argv[2]), debug=True)
