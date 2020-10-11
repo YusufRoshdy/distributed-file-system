@@ -21,6 +21,7 @@ def get_all_files(server):
     return r.content # Response(files={'file': io.BytesIO(r.content)})
 
 def send_command(command):
+    global pool
     print('sending command:', command, flush=True)
     print('pool size', len(pool))
     pool = update_pool(pool)
@@ -130,6 +131,7 @@ def touch():
 @app.route('/put',methods = ['PUT'])
 def put():
     global tree
+    global pool
     path = request.form['path']
     path = format_path(path, 'file')
     if not check_parent_exist(path, tree):
@@ -151,6 +153,7 @@ def put():
 @app.route('/get',methods = ['GET'])
 def get():
     global tree
+    global pool
     path = request.form['path']
     path = format_path(path, 'file')
 
