@@ -32,7 +32,12 @@ def send_zip():
     return send_from_directory(UPLOAD_FOLDER, 'files.zip', as_attachment=True)
 
 def connect():
-    r = requests.post(f'http://{sys.argv[3]}/connect', data={'ip': sys.argv[1], 'port': str(sys.argv[2])})
+    from requests import get
+
+    ip = get('https://api.ipify.org').text
+    
+    # r = requests.post(f'http://{sys.argv[3]}/connect', data={'ip': sys.argv[1], 'port': str(sys.argv[2])})
+    r = requests.post(f'http://{sys.argv[3]}/connect', data={'ip': ip, 'port': str(sys.argv[2])})
     print(r.content[:100])
     if r.content == b'':
         return
