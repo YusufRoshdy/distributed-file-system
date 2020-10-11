@@ -234,7 +234,7 @@ def cp():
     if src not in tree.keys():
         return src + " doesn't exist"
 
-    if not check_parent_exist(dest):
+    if not check_parent_exist(dest, tree):
         return "destnation file parent directory doesn't exist"
 
     
@@ -257,7 +257,7 @@ def mv():
     if src not in tree.keys():
         return src + " doesn't exist"
 
-    if not check_parent_exist(dest):
+    if not check_parent_exist(dest, tree):
         return "destnation file parent directory doesn't exist"
 
 
