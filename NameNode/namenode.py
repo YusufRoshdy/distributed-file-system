@@ -71,7 +71,7 @@ def ls():
         return path + ' is not a directory'
     for t in tree:
         if path in t and len(path) != len(t):
-            if t[len(path):][-1] == '/' or '/' not in t[len(path):]:
+            if (t[len(path):][-1] == '/' and '/' not in t[len(path):-1]) or '/' not in t[len(path):]:
                 ret.append(t[len(path):])
     return '\n'.join(ret)
 
