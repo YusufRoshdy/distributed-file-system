@@ -4,7 +4,7 @@ This project is a *Distributed File System (DFS)*, which will be hosted on AWS. 
 
 Team members:
 - Shamil Khastiev(Storage)
-- Utkarsh Kalra(Clint, Ui)
+- Utkarsh Kalra(Client, Ui)
 - Yusuf Mesbah(Storage, Client, NameNode)
 
  [GitHub link](https://github.com/YusufRoshdy/distributed-file-system)
