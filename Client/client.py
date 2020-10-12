@@ -1,257 +1,253 @@
 import requests
-cur_dir=''
-from flask import Flask, request, send_from_directory
-import re
-def initialze(html, X, cur_dir):
-
-    ip = html + 'initialze'
-
-    r=requests.post(ip)
-    print('initialzed')
-    return cur_dir
-
-#here the input is like "touch file.txt"
-def file_create(html, X, cur_dir):
-    ip = html +'touch'
-    if(len(X)<2):
-        print('give the name of the file you want to create')
-        return
-    if (X[1][0] != '/'): X[1] = '/' + X[1]
-    path = cur_dir + X[1]
-    payload = {'path': path}
-    r = requests.put(ip, data=payload)
-    print('file created')
-    print(r.text)
-    return r.content
-
-#here the input is like "cat file.txt"
-def file_read(html, X, cur_dir):
-    ip = html + 'get'
-    file_name = X[1]
-    if (X[1][0] != '/'): X[1] = '/' + X[1]
-    path = cur_dir + X[1]
-    payload = {'path': path}
-
-    r=requests.get(ip,data=payload)
-    with open(file_name, "wb") as fp:
-        fp.write(r.content)
+from pathlib import PurePosixPath
+from argparse import ArgumentParser
+import os
 
 
-
-    #open(X[1], 'wb').write(r1.content)
-    print(r.text)
-    print('read complete')
-    return r.content
-
-# the input is like put file.txt dir/name.txt
-def file_write(html, X, cur_dir):
-
-    ip = html + 'put'
-    if (X[2][0] != '/'): X[2] = '/' + X[2]
-    path = cur_dir+X[2]
-    r = requests.put(ip,
-                     data={'path': path, 'file': open(X[1]).read()})
-
-    print(r.text)
-    return r.content
-#here the input is like "rm file.txt"
-
-def file_delete(html, X, cur_dir):
-    ip = html + 'rm'
-    if (X[1][0] != '/'): X[1] = '/' + X[1]
-    path = cur_dir + X[1]
-    payload = {'path': path}
-    r1 = requests.delete(ip, data=payload)
-
-    print(r1.text)
-    return r1.content
-
-#not sure tozhe
-def file_info(html, X, cur_dir):
-    ip = html + 'info'
-    if (X[1][0] != '/'): X[1] = '/' + X[1]
-    path = cur_dir + X[1]
-    payload = {'path': path}
-    r1 = requests.get(ip, data=payload)
-
-    print(str(r1.text))
-    return r1.content
+def sizeof_fmt(num: int):
+    for unit in ['', 'Ki', 'Mi', 'Gi']:
+        if abs(num) < 1024.0:
+            break
+        num /= 1024.0
+    return f"{num:3.1f} {unit}B"
 
 
-def pool(html):
-    ip =html+'get_pool'
+class Client:
+    def __init__(self, url: str):
+        self.cwd = PurePosixPath('/')
+        self.url = url
 
-    r = requests.get(ip)
-    print(r.content)
+    def initialize(self, cmd=None):
+        '''Clears all files.               Usage: initialize'''
+        r = requests.post(f'{self.url}/initialize')
+        if not r.ok:
+            print('An error occured:', r.text)
+            return
+        self.cwd = PurePosixPath('/')
+        print('Initialized')
 
-    return r.content
+    #here the input is like "touch file.txt"
+    def touch(self, cmd):
+        '''Creates new file                Usage: touch <file path>'''
+        if len(cmd) < 2:
+            print('File name is required')
+            return
+        filename = cmd[1]
+        path = str(self.cwd / filename)
+        r = requests.put(f'{self.url}/touch', data={'path': path})
+        if not r.ok:
+            print('An error occured:', r.text)
+            return
 
-# here the input is like "cp file.txt dir"
-def file_copy(html, X, cur_dir):
-    if (X[1][0] != '/'): X[1] = '/' + X[1]
-    print(cur_dir,'yfiyf')
+    #here the input is like "get file.txt"
+    def get(self, cmd):
+        '''Download a file.                Usage: get <filename> <destination>'''
+        filename, dest = cmd[1:]
+        path = str(self.cwd / filename)
 
-    if(len(X)<3):
-        print('give the directory to copy in')
-        return
-    if(X[2][0] != '/'): X[2] = '/' + X[2]
-    ip = html + 'cp'
-    print(cur_dir+X[1])
-    payload = {'src': cur_dir+X[1], 'dest': cur_dir+X[2]}
-    r1 = requests.post(ip, data=payload)
-    print(r1.text)
-    return r1.content
+        if not os.path.exists(PurePosixPath(dest).parent):
+            print("Destination parent directory doesn't exist")
+            return
 
-# here the input is like "mv file.txt directory"
-def file_move(html, X, cur_dir):
+        r = requests.get(f'{self.url}/get', data={'path': path})
+        if not r.ok:
+            print(r.text)
+            return
 
-    ip = html + 'mv'
-    if (X[1][0] != '/'): X[1] = '/' + X[1]
-    path = cur_dir + X[1]
-    dir = ''
-    if (X[2][0] != '/'):
-        dir =cur_dir+ '/' + X[2]
-    else:
-        dir = cur_dir+X[2]
-    payload = {'src':path, 'dest':dir}
-    r=requests.put(ip, data=payload)
+        with open(dest, "wb") as fp:
+            fp.write(r.content)
 
-    print('moved')
-    print(r.text)
-    return str(r.content)
+    # the input is like put file.txt dir/name.txt
+    def put(self, cmd):
+        '''Upload a file.                  Usage: put <file path> <destination path>'''
+        filename, dest = cmd[1:]
+        if not os.path.exists(filename):
+            print(filename, "doesn't exist")
+            return 
+        content = open(filename).read()
+        path = str(self.cwd / dest)
 
-#here the input is like "cd directory"
-def open_directory(html,X, cur_dir):
-    ip = html + 'ls'
-    path=''
-    if(X[1]=='..'):
-        dirs = cur_dir.split('/')
-        for i in range(len(dirs)-1):
-            path = path+dirs[i]+'/'
-        path = path[:-1]
-        print(path)
-        return path
-    else:
-        if(X[1][0]!='/'): X[1]='/'+X[1]
-        path = cur_dir + X[1]
-        payload = {'path': path}
-        r = requests.get(ip, data=payload)
-        things = re.split('[\n /]', r.text)
-        X[1] = X[1].split('/')
-        print('x1', X[1])
-        print('things', things)
-        print('r.text', str(r.text))
-        #print(str(r.content) + 'sjshshs')
-        substring='not a directory'
-        if(substring in r.text):
+        r = requests.put(f'{self.url}/put',
+                        data={'path': path, 'file': content})
+        if not r.ok:
+            print('An error occured:', r.text)
+            return
 
-            print('this directory does not exist')
-            return cur_dir
-        else:
-            print('changed')
-            print(path)
-            return path
+    #here the input is like "rm file.txt"
+    def rm(self, cmd):
+        '''Remove a file.                  Usage: rm <file path>'''
+        filename = cmd[1]
+        if filename[0] != '/':
+            filename = '/' + filename
+
+        path = str(self.cwd / filename)
+        r = requests.delete(f'{self.url}/rm', data={'path': path})
+        if not r.ok:
+            print('An error occured:', r.text)
+            return
+
+    def info(self, cmd):
+        '''Get info about file.            Usage: info <file path>'''
+        filename = cmd[1]
+        if filename[0] != '/':
+            filename = '/' + filename
+        path = str(self.cwd / filename)
+        r = requests.get(f'{self.url}/info', data={'path': path})
+        if not r.ok:
+            print('An error occured:', r.text)
+            return
+        
+        if 'size' in r.json().keys():
+            print('size: ', sizeof_fmt(r.json()['size']))
+        if 'replicas' in r.json().keys():
+            print('replicas: ', r.json()['replicas'])
+
+    def pool(self, cmd=None):
+        '''Lists available servers.        Usage: pool'''
+        r = requests.get(f'{self.url}/get_pool')
+        for idx, server in enumerate(r.json(),1):
+            print(f'Server {idx}:', 'ip',server['ip'], ', port', server['port'], ', initialized', server['initialized'])
+
+    # here the input is like "cp file.txt dir"
+    def cp(self, cmd):
+        '''Copy a file.                    Usage: cp <src> <dest>'''
+        if len(cmd) < 3:
+            print('Both file name and destination are required')
+            return
+
+        filename, dest = cmd[1:]
+        if filename[0] != '/':
+            filename = '/' + filename
+
+        if dest[0] != '/':
+            dest = '/' + dest
+
+        payload = {'src': str(self.cwd / filename), 'dest': str(self.cwd / dest)}
+        r = requests.post(f'{self.url}/cp', data=payload)
+        if not r.ok:
+            print('An error occured:', r.text)
+            return
+
+    # here the input is like "mv file.txt directory"
+    def mv(self, cmd):
+        '''Moves (or renames) a file.      Usage: mv <src> <dest>'''
+        filename, dest = cmd[1:]
+        if filename[0] != '/':
+            filename = '/' + filename
+
+        path = str(self.cwd / filename)
+
+        if dest[0] != '/':
+            dest = str(self.cwd / dest)
+
+        payload = {'src': path, 'dest': dest}
+        r = requests.put(f'{self.url}/mv', data=payload)
+        if not r.ok:
+            print('An error occured:', r.text)
+            return
+        
+    #here the input is like "cd directory"
+    def cd(self, cmd):
+        '''Changes the current directory.  Usage: cd <directory>'''
+        directory = cmd[1]
+        parts = directory.split('/')
+        while parts[0] == '..':
+            self.cwd = self.cwd.parent
+            parts = parts[1:]
+            if len(parts) == 0:
+                return
+
+        directory = PurePosixPath('/'.join(parts))
+
+        if not directory.is_absolute():
+            directory = self.cwd / directory
+
+        payload = {'path': str(directory)}
+        r = requests.get(f'{self.url}/ls', data=payload)
+        if not r.ok:
+            print(r.text)
+            return
+
+        # If request passed, the folder exists
+        self.cwd = directory
+
+    #here the input is like "ls directory"
+    def ls(self, cmd):
+        '''Lists directory contents.       Usage: ls [directory]'''
+        directory = self.cwd
+        if len(cmd) > 1:
+            directory = PurePosixPath(cmd[1])
+
+        if not directory.is_absolute():
+            directory = self.cwd / directory
+
+        r = requests.get(f'{self.url}/ls', data={'path': str(directory)})
+        print(*r.json(), sep='\n')
+
+    #here the input is like "mkdir directory"
+    def mkdir(self, cmd):
+        '''Create an empty directory.      Usage: mkdir <directory>'''
+        directory = PurePosixPath(cmd[1])
+        if not directory.is_absolute():
+            directory = self.cwd / directory
+        r = requests.put(f'{self.url}/mkdir', data={'path': str(directory)})
+        if not r.ok:
+            print(r.text)
+            return
+
+    def rmdir(self, cmd):
+        '''Remove a directory.             Usage: rmdir <directory>'''
+        directory = PurePosixPath(cmd[1])
+        if not directory.is_absolute():
+            directory = self.cwd / directory
+
+        r = requests.delete(f'{self.url}/rmdir', data={'path': str(directory)})
+        if not r.ok:
+            print(r.text)
+            if r.status_code == 400:
+                answer = ''
+                while answer not in ['y', 'n']:
+                    print("Do you still want to delete? (y/n)")
+                    answer = input()
+                if answer == 'y':
+                    payload = {'path': str(directory), 'force': 'force'}
+                    r = requests.delete(f'{self.url}/rmdir', data=payload)
+
+    def exit(self, cmd=None):
+        '''Exits.                          Usage: exit'''
+        pass
 
 
+def main():
+    parser = ArgumentParser()
+    parser.add_argument("ip", help="The IP of the naming server")
+    parser.add_argument("-p", "--port", default=5000, type=int, help="The port of the naming server")
+    args = parser.parse_args()
+    ip = args.ip
+    port = args.port
+    address = f'{ip}:{port}'
 
-#here the input is like "ls directory"
-def read_directory(html,X, cur_dir):
-    dir=''
-    if(len(X)>1):
-        if (X[1][0] != '/'): X[1] = '/' + X[1]
-        dir = X[1]
-    ip=html + 'ls'
-    path= cur_dir + '/' + dir
+    client = Client(address)
+    available_commands = [attr for attr in dir(client) if not attr.startswith('_') and callable(getattr(client, attr))]
+    cmd = ''
+    def print_help():
+        for command in available_commands:
+            print(f'{command:25} - ', getattr(client, command).__doc__)
 
-    payload = {'path': path}
-    r=requests.get(ip, data=payload)
-    print('sent ls')
-    print(str(r.text))
-    return r.content
+    while True:
+        print(f'{client.cwd}> ', end='')
+        cmd = input().split(' ')
+        if cmd[0] == 'exit':
+            break
+        if cmd[0] == 'help':
+            print_help()
+            continue
+        if cmd[0] not in available_commands:
+            print('Unkown command. Available commands:\n')
+            print_help()
+            continue
+        func = getattr(client, cmd[0])
+        func(cmd)
 
-#here the input is like "mkdir directory"
-def make_directory(html, X, cur_dir):
-
-    ip  = html +  'mkdir'
-    if (X[1][0] != '/'): X[1] = '/' + X[1]
-    path = cur_dir + X[1]
-    payload = {'path': path}
-    r = requests.put(ip, data=payload)
-    print('made directory')
-    print(str(r.content))
-    return r.content
-
-#this i am not sure
-def delete_directory(html, X, cur_dir):
-
-    ip = html+'rmdir'
-    if (X[1][0] != '/'): X[1] = '/' + X[1]
-    path = cur_dir + X[1]
-    payload = {'path': path }
-    r=requests.delete(ip, data=payload)
-
-    if(r.text==path+' is not a directory'):
-        print(path+' is not a directory')
-
-    elif(r.text=='Directory is not empty'):
-        print(path+' is not empty')
-        print("do you still want to delete?(yes/no)")
-        check = input()
-        if(check=='yes'):
-            payload = {'path': path, 'force':'force'}
-            r=requests.delete(ip, data = payload)
-            print('deleted')
-        else:
-            print('not deleted, be careful next time you bitch')
-    return r.content
-
-def get_input(html, X, cur_dir):
-
-    if(X[0] == 'initialize'):
-        cur_dir=initialze(html, X, cur_dir)
-
-    if(X[0]== 'touch'):
-        cur_dir=file_create(html, X, cur_dir)
-    if (X[0] == 'get'):
-        cur_dir=file_read(html, X, cur_dir)
-    if(X[0]=='put'):
-        cur_dir = file_write(html, X, cur_dir)
-
-    if (X[0] == 'rm'):
-        cur_dir =file_delete(html, X, cur_dir)
-    if (X[0] == 'info'):
-        cur_dir =file_info(html, X, cur_dir)
-    if (X[0] == 'cp'):
-        cur_dir =file_copy(html, X, cur_dir)
-    if (X[0] == 'mv'):
-        cur_dir =file_move(html, X, cur_dir)
-    if (X[0] == 'cd'):
-        cur_dir =open_directory(html, X, cur_dir)
-    if (X[0] == 'ls'):
-
-        cur_dir = read_directory(html, X, cur_dir)
-    if (X[0] == 'mkdir'):
-        cur_dir =make_directory(html, X, cur_dir)
-    if (X[0] == 'rmdir'):
-        cur_dir =delete_directory(html, X, cur_dir)
-    if (X[0] == 'get_pool'):
-        cur_dir =pool(html)
-    return cur_dir
-
-def main(cur_dir):
-    print('Enter the ip to the namemode')
-    ip = input()
-    print('Enter the port')
-    port = input()
-    ip = ip + ':' + port +'/'
-    while(1):
-         X=input()
-         X=X.split(" ")
-         print(len(X))
-         if(X[0]=='cd'):
-             cur_dir =get_input(ip, X, cur_dir)
-         else:
-             get_input(ip, X, cur_dir)
-
-         print(cur_dir)
-main('.')
+if __name__ == '__main__':
+    main()

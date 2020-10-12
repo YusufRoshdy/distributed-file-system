@@ -2,6 +2,7 @@ import sys
 import pickle
 import os
 import requests
+from pathlib import PurePosixPath
 
 def save_tree(tree):
     with open('tree.pkl', 'wb') as f:
@@ -47,12 +48,14 @@ def update_pool(pool):
     return pool
 
 def format_path(path, path_type='folder'):
+    # return '.' + path + ('/' if path[-1] != '/' else '')
     # turn . to ./
-    if path == '.':
-        path = './'
+    # if path == '.':
+    #     path = './'
     # add ./ to the start of path if doesn't exist
-    if path[:2] != './':
-        path = './' + path
+    if path[0] == '/':
+        path = '.' + path
+
     # add / to folder names
     if path[-1] != '/' and path_type == 'folder':
         path = path + '/'
@@ -64,9 +67,8 @@ def format_path(path, path_type='folder'):
 
 
 def check_parent_exist(path, tree):
-    for i in range(len(path)-2, 0, -1):
-        if path[i] == '/':
-            break
-    if path[:i+1] in tree.keys():
-        return True
-    return False
+    return get_parent(path) in tree.keys()
+def get_parent(path):
+    if str(PurePosixPath(path).parent) == '.':
+        return './'
+    return format_path('/'+str(PurePosixPath(path).parent),path_type='folder')
