@@ -152,19 +152,21 @@ class Ui_MainWindow(object):
             command = 'mv'
         if (str(self.comboBox.currentText()) == 'Write File'):
             command = 'put'
+        if (str(self.comboBox.currentText()) == 'get_pool'):
+            command = 'get_pool'    
 
         addition_to_cmd = self.textEdit.toPlainText()
         func = getattr(self.client, command)
         final_cmd = command + " " + addition_to_cmd
         #print(final_cmd)
         Command = final_cmd
-        print(func(final_cmd.split()))
+        func(final_cmd.split())
 
 
     def start(self):
         address = self.textEdit_3.toPlainText()
-        print(address)
-        #self.client = Client(address)
+        #print(address)
+        self.client = Client(address)
 
 def print(*args, **kwargs):
     from builtins import print as native_print
