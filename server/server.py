@@ -53,6 +53,7 @@ def connect():
         os.remove('files.zip')
     except Exception as err:
         print("couldn't connect because:", err)
+        return False
     return True
 
 for _ in range(5):
