@@ -287,5 +287,4 @@ def mv():
     return NO_CONTENT
 
 if __name__ == '__main__':
-   app.run(host=sys.argv[1], port=int(sys.argv[2]), debug = True)
-
+   app.run(host='0.0.0.0', port=int(sys.argv[1]), debug = True)
