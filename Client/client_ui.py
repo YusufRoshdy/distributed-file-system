@@ -153,7 +153,7 @@ class Ui_MainWindow(object):
         if (str(self.comboBox.currentText()) == 'Write File'):
             command = 'put'
         if (str(self.comboBox.currentText()) == 'get_pool'):
-            command = 'get_pool'    
+            command = 'pool'    
 
         addition_to_cmd = self.textEdit.toPlainText()
         func = getattr(self.client, command)
