@@ -8,10 +8,14 @@ Team members:
 - Yusuf Mesbah(Storage, Client, NameNode)
 
  [GitHub link](https://github.com/YusufRoshdy/distributed-file-system)
+
  DockerHub links:
+
  [dfs_server](https://hub.docker.com/r/yusufmesbah/dfs_server)
+ 
  [dfs_namenode](https://hub.docker.com/r/yusufmesbah/dfs_namenode)
- [dfs_client](https://hub.docker.com/r/yusufmesbah/dfs_client)
+
+[dfs_client](https://hub.docker.com/r/yusufmesbah/dfs_client)
 
 
 ## Architecture
