@@ -3,7 +3,6 @@ import requests
 import shutil
 import tempfile
 from flask import Flask, redirect, request, send_file, url_for, Response, abort, jsonify, send_from_directory
-from helpers.exceptions import HTTPBadRequest, HTTPNotFound
 import io
 import sys
 from os.path import basename
@@ -15,6 +14,8 @@ os.chdir('files')
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
+
+print('sys.argv:',sys.argv)
 
 
 def allowed_file(filename):
@@ -36,10 +37,8 @@ def send_zip():
 def connect():
     from requests import get
 
-    ip = get('https://api.ipify.org').text
-    
-    # r = requests.post(f'http://{sys.argv[3]}/connect', data={'ip': sys.argv[1], 'port': str(sys.argv[2])})
-    r = requests.post(f'http://{sys.argv[3]}/connect', data={'port': str(sys.argv[2])})
+    r = requests.post(f'{sys.argv[2]}/connect', data={'port': str(sys.argv[1])})
+
     # print(r.content[:100])
     if r.content == b'':
         return
@@ -52,7 +51,6 @@ def connect():
         zipObj.extractall()
     os.remove('files.zip')
 connect()
-
 
 # same for touch just send empty data
 @app.route("/files/<path:path>", methods=["POST"])
@@ -68,7 +66,6 @@ def upload_file(path):
             abort(Response(f"You did something wrong try again or contact Yusuf:\n the problem: {err}", status=400))
     abort(Response(f"No file send or file format is not supported", status=400))
 
-
 @app.route("/files/<path:path>",  methods=["GET"])
 def send_file(path):
     """send a file to namenode"""
@@ -79,7 +76,6 @@ def check_up():
     """check the server is up"""
     return ('up', 200)
 
-
 @app.route("/command/",  methods=["POST"])
 def command():
     """Run command"""
@@ -87,30 +83,22 @@ def command():
     os.system(str(request.data)[2:-1])
     return ('', 204)
 
-
-
 @app.route("/files/<path:path>",  methods=["DELETE"])
 def delete_file(path):
     """delete a file"""
     try:
         os.remove(os.path.join(UPLOAD_FOLDER, path))
-    except:
-        HTTPNotFound(
-            message="You did something wrong try again or contact Yusuf"
-        )
-
+    except Exception as err:
+        abort(Response(f"You did something wrong try again or contact Yusuf:\n the problem: {err}", status=400))
+        
 # path from root
 # if you want to create hi dir put rootfolder/.../hi
 @app.route("/mkdir/<path:path>",  methods=["PUT"])
 def mkdir(path):
     try:
         os.mkdir(os.path.join(UPLOAD_FOLDER, path))
-    except:
-        HTTPNotFound(
-            message="You did something wrong try again or contact Yusuf"
-                    "The problem may acquired"
-                    " because {} is wrong path".format(path)
-        )
+    except Exception as err:
+        abort(Response(f"You did something wrong try again or contact Yusuf:\n the problem: {err}", status=400))
 
 
 @app.route("/dir/<path:path>",  methods=["DELETE"])
@@ -118,10 +106,8 @@ def delete_dir(path):
     """delete a file"""
     try:
         os.rmdir(os.path.join(UPLOAD_FOLDER, path))
-    except:
-        HTTPNotFound(
-            message="You did something wrong try again or contact Yusuf"
-        )
+    except Exception as err:
+        abort(Response(f"You did something wrong try again or contact Yusuf:\n the problem: {err}", status=400))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(sys.argv[2]), debug=False)
+    app.run(host='0.0.0.0', port=int(sys.argv[1]), debug=False)
