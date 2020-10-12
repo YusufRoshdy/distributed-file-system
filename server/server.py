@@ -7,6 +7,7 @@ import io
 import sys
 from os.path import basename
 from zipfile import ZipFile
+import time
 
 UPLOAD_FOLDER = './'
 os.makedirs('files', exist_ok=True)
@@ -35,22 +36,30 @@ def send_zip():
     return send_from_directory('../','files.zip', as_attachment=True)
 
 def connect():
-    from requests import get
 
-    r = requests.post(f'{sys.argv[2]}/connect', data={'port': str(sys.argv[1])})
+    try:
+        r = requests.post(f'{sys.argv[2]}/connect', data={'port': str(sys.argv[1])})
 
-    # print(r.content[:100])
-    if r.content == b'':
-        return
-    file = io.BytesIO(r.content)
-    with open('files.zip','wb') as out: ## Open temporary file as bytes
-        out.write(file.read())
-    
-    with ZipFile('files.zip', 'r') as zipObj:
-        # Extract all the contents of zip file in current directory
-        zipObj.extractall()
-    os.remove('files.zip')
-connect()
+        # print(r.content[:100])
+        if r.content == b'':
+            return
+        file = io.BytesIO(r.content)
+        with open('files.zip','wb') as out: ## Open temporary file as bytes
+            out.write(file.read())
+        
+        with ZipFile('files.zip', 'r') as zipObj:
+            # Extract all the contents of zip file in current directory
+            zipObj.extractall()
+        os.remove('files.zip')
+    except Exception as err:
+        print("couldn't connect because:", err)
+    return True
+
+for _ in range(5):
+    if connect():
+        break
+    time.sleep(5)
+
 
 # same for touch just send empty data
 @app.route("/files/<path:path>", methods=["POST"])
