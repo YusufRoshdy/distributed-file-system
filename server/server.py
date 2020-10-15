@@ -35,7 +35,8 @@ def send_zip():
     return send_from_directory('../','files.zip', as_attachment=True)
 
 def connect():
-    os.system('rm -r files/*')
+    os.system('rm -r files')
+    os.makedirs('files', exist_ok=True)
     try:
         r = requests.post(f'{sys.argv[2]}/connect', data={'port': str(sys.argv[1])})
 
