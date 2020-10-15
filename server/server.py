@@ -11,7 +11,6 @@ import time
 
 UPLOAD_FOLDER = './'
 os.makedirs('files', exist_ok=True)
-os.chdir('files')
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
@@ -36,7 +35,7 @@ def send_zip():
     return send_from_directory('../','files.zip', as_attachment=True)
 
 def connect():
-    os.system('rm -r *')
+    os.system('rm -r files/*')
     try:
         r = requests.post(f'{sys.argv[2]}/connect', data={'port': str(sys.argv[1])})
 
@@ -60,6 +59,7 @@ for _ in range(5):
     if connect():
         break
     time.sleep(5)
+os.chdir('files')
 
 
 # same for touch just send empty data
