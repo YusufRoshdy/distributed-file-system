@@ -42,7 +42,7 @@ def connect():
 
         # print(r.content[:100])
         if r.content == b'':
-            return
+            return True
         file = io.BytesIO(r.content)
         with open('files.zip','wb') as out: ## Open temporary file as bytes
             out.write(file.read())

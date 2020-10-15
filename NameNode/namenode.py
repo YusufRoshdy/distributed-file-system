@@ -59,6 +59,7 @@ def get_pool():
 
 @app.route('/initialize',methods = ['POST'])
 def initialize():
+    global tree
     tree = {'./': 1}
     send_command('rm -r *')
     save_tree(tree)
